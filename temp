@@ -1,0 +1,109 @@
+import os
+import shutil
+import smtplib
+from email.message import EmailMessage
+from datetime import datetime
+from dotenv import load_dotenv
+import time
+from datetime import datetime
+
+
+# Logging
+import logging
+logging.basicConfig(
+    filename="backup_log.txt",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# Tải các thông tin từ file .env
+load_dotenv()
+
+# Lấy biến môi trường
+sender_email = os.getenv('SENDER_EMAIL')
+app_password = os.getenv('APP_PASSWORD')
+receiver_email = os.getenv('RECEIVER_EMAIL')
+
+def backup_database():
+    try:
+        # Thư mục gốc và thư mục backup
+        src_folder = "./database"
+        backup_folder = "./backup"
+
+        # Kiểm tra thư mục nguồn
+        if not os.path.exists(src_folder):
+            raise Exception(f"Thư mục nguồn {src_folder} không tồn tại.")
+
+        # Kiểm tra và sao lưu các file
+        backed_up_files = []  # Danh sách các file đã sao lưu
+        for file_name in os.listdir(src_folder):
+            if file_name.endswith(".sql") or file_name.endswith(".sqlite3"):
+                path = os.path.join(src_folder, file_name)
+                path_backup = os.path.join(backup_folder, file_name)
+                shutil.copy(path, path_backup)
+                backed_up_files.append(file_name)
+
+        # Nếu không có file nào để backup
+        if not backed_up_files:
+            raise Exception("Không có file .sql hoặc .sqlite3 trong thư mục nguồn.")
+
+        # Ghi log và gửi email thành công
+        success_message = f"Backup thành công. Các file được sao lưu: {', '.join(backed_up_files)}"
+        logging.info(success_message)
+        send_email("Backup Thành Công", success_message)
+    except Exception as e:
+        # Ghi log và gửi email thông báo lỗi
+        error_message = f"Lỗi khi backup: {e}"
+        logging.error(error_message)
+        send_email("Backup Thất Bại", error_message)
+
+def send_email(subject, body):
+    try:
+        # Thiết lập email
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = sender_email
+        msg['To'] = receiver_email
+        msg.set_content(body)
+
+        # Gửi email bằng SMTP
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(sender_email, app_password)
+            smtp.send_message(msg)
+
+        logging.info(f"Email với tiêu đề '{subject}' đã được gửi thành công.")
+    except Exception as e:
+        logging.error(f"Lỗi khi gửi email: {e}")
+
+
+import time
+from datetime import datetime
+
+def main_loop():
+    while True:
+        now = datetime.now()
+        print(f"Thời gian hiện tại: {now.strftime('%H:%M:%S')}")  # Hiển thị thời gian hiện tại
+
+        # Kiểm tra nếu đúng giờ backup
+        if now.hour == 12 and now.minute == 12:  # Ví dụ: 12:12 PM
+            print("Đúng giờ backup, bắt đầu sao lưu...")
+            backup_database()  # Thực hiện backup
+            print("Backup đã hoàn thành.")
+
+        # Nghỉ 60 giây trước khi kiểm tra lại
+        time.sleep(60)
+
+def main_loop():
+    while True:
+        now = datetime.now()  # Lấy thời gian hiện tại
+        print(f"Thời gian hiện tại: {now.strftime('%H:%M:%S')}")  # Hiển thị thời gian
+
+        # Kiểm tra nếu đúng giờ cần backup
+        if now.hour == 13 and now.minute == 25 and now.second == 0:
+            print("Đúng giờ backup, bắt đầu sao lưu...")
+            backup_database()  # Gọi hàm backup
+            print("Backup đã hoàn thành.")
+        time.sleep(1)
+
+if __name__ == "__main__":
+    main_loop()
