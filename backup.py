@@ -77,7 +77,7 @@ def main_loop():
         print(f"Thoi gian thuc: {now.strftime('%H:%M:%S')}")
 
         # Check time backup co dung hay khong
-        if now.hour == 20 and now.minute == 14 and now.second == 0:
+        if now.hour == 20 and now.minute == 35 and now.second == 0:
             print("Den gio backup, bat dau sao luu...")
             backup_database()
             print("Backup thanh cong.")
